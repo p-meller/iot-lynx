@@ -1,0 +1,60 @@
+version: "3.9"
+services:
+  database:
+    image: mysql/mysql-server
+    restart: on-failure
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: iot_lynx
+#      MYSQL_USER: lynx
+#      MYSQL_PASSWORD: 123
+      MYSQL_ROOT_HOST: "%"
+    ports:
+      - "3306:3306"
+
+  main_unit:
+    image: pmeller/main_unit_spring
+    restart: on-failure
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - MQTT_HOST=${MQTT_HOST}
+      - MQTT_PORT=${MQTT_PORT}
+      - MQTT_USER=${MQTT_USER}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+    depends_on:
+      - database
+
+
+  #  messaging:
+  #    image: rabbitmq:3.9.8
+  #    environment:
+  #      RABBITMQ_DEFAULT_USER: admin
+  #      RABBITMQ_DEFAULT_PASS: admin
+  #    ports:
+  #      - "5672:5672"
+  #      - "15672:15672"
+  #      - "1883:1883"
+  #      - "9001:9001"
+  #    volumes:
+  #      - ../etc/rabbit_plugins:/etc/rabbitmq/enabled_plugins
+  #      - ../etc/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+
+  mqtt:
+    image: eclipse-mosquitto
+    restart: on-failure
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - '../etc/mosquitto.conf:/mosquitto/config/mosquitto.conf'
+
+#  hivemq:
+#    image: hivemq/hivemq4
+#    ports:
+#      - "8080:8080"
+#      - "1883:1883"
+#      - "8000:8000"

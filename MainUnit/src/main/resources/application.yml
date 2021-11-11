@@ -1,0 +1,23 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: root
+    #url: jdbc:mysql://localhost:3306/iot_lynx
+    #url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_DATABASE:iot_lynx}?useSSL=false
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_DATABASE:iot_lynx}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+#    properties:
+#      hibernate:
+#        dialect: org.hibernate.dialect.MySQL8Dialect
+
+mqtt:
+  hostname: ${MQTT_HOST:localhost}
+  port: ${MQTT_PORT:1883}
+  user: ${MQTT_USER:guest}
+  password: ${MQTT_PASSWORD:guest}
+  topics: ${MQTT_TOPICS:/sensor/temperature;/sensor/pressure;/sensor/humidity}
+
