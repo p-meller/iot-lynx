@@ -1,9 +1,8 @@
 #include <Arduino.h>
 #include <WiFi.h>
-//#include <FlashHandler>
-#include "../lib/FlashHandler/FlashHandler.h"
-//#include <WiFiHandler>
-#include "../lib/WiFiHandler/WiFiHandler.h"
+#include <FlashHandler.h>
+#include <WiFiHandler.h>
+#include <TimeHandler.h>
 #include <WebServer.h>
 #include "time.h"
 #include <Wire.h>
@@ -12,20 +11,17 @@
 #include <string>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
-
+#include <CommonFunctions.h>
 
 FlashHandler flashHandler(FlashIndex::FLASH_INDEX_MAX);
 WiFiHandler wifiHandler("ASUS", "12345678", &flashHandler);
-
-hw_timer_t *timer = nullptr;
-portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
 
 const char *ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = 3600;
 const int daylightOffset_sec = 0;
 
 Adafruit_BME280 bme;
-
+TimeHandler<> timeHandler("pool.ntp.org", 1);
 
 void initBMP280()
 {
@@ -42,38 +38,6 @@ void initBMP280()
   //                 Adafruit_BMP280::SAMPLING_X16,    /* Pressure oversampling */
   //                 Adafruit_BMP280::FILTER_X16,      /* Filtering. */
   //                 Adafruit_BMP280::STANDBY_MS_500); /* Standby time. */
-}
-
-String getIsoTime()
-{
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo))
-  {
-    Serial.println("Failed to obtain time");
-    return String();
-  }
-  char time[20];
-  sprintf(time, "%04d-%02d-%02dT%02d:%02d:%02d", timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-  return String(time);
-}
-
-void printTime()
-{
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo))
-  {
-    Serial.println("Failed to obtain time");
-    return;
-  }
-  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
-  Serial.print("ISO: ");
-  Serial.println(getIsoTime());
-}
-
-void configTime()
-{
-  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-  printTime();
 }
 
 WiFiClient espClient;
@@ -125,7 +89,7 @@ void sendSensorData()
   StaticJsonDocument<192> json1;
   json1["sensorType"] = "temperature";
   json1["sensorChip"] = "bme280";
-  json1["datetime"] = getIsoTime();
+  json1["datetime"] = timeHandler.getIsoTime().getDateTime();
   json1["unit"] = "Celcius";
   json1["symbol"] = "\u2103";
   JsonArray data1 = json1.createNestedArray("data");
@@ -141,7 +105,7 @@ void sendSensorData()
   StaticJsonDocument<192> json2;
   json2["sensorType"] = "pressure";
   json2["sensorChip"] = "bme280";
-  json2["datetime"] = getIsoTime();
+  json2["datetime"] = timeHandler.getIsoTime().getDateTime();
   json2["unit"] = "Pascal";
   json2["symbol"] = "Pa";
   JsonArray data2 = json2.createNestedArray("data");
@@ -157,7 +121,7 @@ void sendSensorData()
   StaticJsonDocument<192> json3;
   json3["sensorType"] = "humidity";
   json3["sensorChip"] = "bme280";
-  json3["datetime"] = getIsoTime();
+  json3["datetime"] = timeHandler.getIsoTime().getDateTime();
   json3["unit"] = "Percent";
   json3["symbol"] = "%";
   JsonArray data3 = json3.createNestedArray("data");
@@ -198,11 +162,11 @@ void setup()
   else
   {
     Serial.println("Failed to connect to wifi");
-    ESP.deepSleep(5 *60*1000000);
+    ESP.deepSleep(5 * 60 * 1000000);
     ESP.restart();
   }
 
-  configTime();
+  timeHandler.connect();
 
   initBMP280();
 
@@ -213,7 +177,7 @@ void setup()
   sendSensorData();
 
   client.disconnect();
-  ESP.deepSleep(5*60*1000000);
+  ESP.deepSleep(5 * 60 * 1000000);
   ESP.restart();
 }
 
